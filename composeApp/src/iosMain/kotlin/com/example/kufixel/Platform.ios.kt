@@ -93,12 +93,13 @@ object IosImageSaver : ImageSaver {
         UIGraphicsEndImageContext()
 
         if (image == null) return false
+        val uiImage = image
 
         // Save to Photos
         PHPhotoLibrary.requestAuthorization { status ->
             if (status == PHAuthorizationStatusAuthorized) {
                 PHPhotoLibrary.sharedPhotoLibrary().performChanges({
-                    PHAssetChangeRequest.creationRequestForAssetFromImage(image)
+                    PHAssetChangeRequest.creationRequestForAssetFromImage(uiImage)
                 }, completionHandler = { success, error ->
                     if (!success) {
                         println("Error saving image: ${error?.localizedDescription}")
