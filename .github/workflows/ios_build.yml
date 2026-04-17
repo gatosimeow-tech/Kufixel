@@ -1,0 +1,52 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Build Kotlin Framework
+      run: ./gradlew :composeApp:assembleDebugAppleFrameworkForXcode
+
+    - name: Build IPA
+      run: |
+        cd iosApp
+        xcodebuild archive \
+          -project iosApp.xcodeproj \
+          -scheme iosApp \
+          -configuration Debug \
+          -archivePath build/iosApp.xcarchive \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+        mkdir -p build/Payload
+        cp -r build/iosApp.xcarchive/Products/Applications/iosApp.app build/Payload/
+        cd build
+        zip -r iosApp.ipa Payload
+        
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-debug-ipa
+        path: iosApp/build/iosApp.ipa
